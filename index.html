@@ -146,7 +146,7 @@
             selectedMode = mode;
             document.getElementById('page-select').classList.remove('active');
             document.getElementById('page-instruction').classList.add('active');
-            document.getElementById('mode-display').innerText = `当前加载配置: Condition ${mode === 1 ? 'A (接纳)' : 'B (排斥)'}`;
+            document.getElementById('mode-display').innerText = `当前加载配置: Condition ${mode === 1 ? 'A ' : 'B '}`;
         }
 
         function launchGame() {
@@ -175,7 +175,7 @@
                 this.computerPlayers = [ { name: '玩家 A' }, { name: '玩家 B' } ];
                 
                 // --- 修改点：设置总投球数为 60 ---
-                this.throwCount = 60; 
+                this.throwCount = 90; 
                 
                 this.ballSpeed = 500; 
                 this.baseUrl = './assets'; // 图片路径
@@ -361,11 +361,11 @@
                     if (this.throwCount <= 15) {
                         // 阶段一：建立关系 (0 - 15 球)
                         passToPlayerProb = 0.5; 
-                    } else if (this.throwCount <= 35) {
-                        // 阶段二：开始冷落 (16 - 35 球)
+                    } else if (this.throwCount <= 50) {
+                        // 阶段二：开始冷落 (16 - 50 球)
                         passToPlayerProb = 0.30; 
                     } else {
-                        // 阶段三：完全排斥 (36 - 60 球)
+                        // 阶段三：完全排斥 (50 - 90 球)
                         passToPlayerProb = 0.15; 
                     }
 
@@ -388,7 +388,7 @@
                 rect.setDepth(200);
 
                 // 结束文字
-                const text = this.add.text(this.scale.width/2, this.scale.height/2, "实验结束，感谢您的参与", {
+                const text = this.add.text(this.scale.width/2, this.scale.height/2, "游戏结束，感谢您的参与", {
                     fontFamily: '"Microsoft YaHei", Arial',
                     fontSize: '32px', 
                     color: '#2C3E50', 
