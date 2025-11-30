@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cyberball Pro</title>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
+    <style>
+        /* --- 全局样式 --- */
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        #app-container {
+            width: 800px;
+            height: 500px;
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* --- 页面切换系统 --- */
+        .page {
+            display: none; /* 默认隐藏 */
+            width: 100%;
+            height: 100%;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            position: absolute;
+            top: 0;
+            left: 0;
+            background: white;
+            z-index: 10;
+        }
+
+        .page.active { display: flex; }
+
+        /* --- 游戏画布容器 --- */
+        #phaser-container {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        /* --- 按钮美化 --- */
+        h1 { color: #333; margin-bottom: 30px; }
+        p { color: #555; font-size: 18px; line-height: 1.6; max-width: 600px; }
+
+        .btn {
+            padding: 12px 50px;
+            margin: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            background-color: #4A90E2;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            box-shadow: 0 4px 6px rgba(74, 144, 226, 0.3);
+            transition: all 0.2s;
+        }
+        .btn:hover { background-color: #357ABD; transform: translateY(-2px); }
+        .btn:active { transform: translateY(0); }
+        
+        /* 错误提示框 */
+        #error-msg {
+            display: none;
+            position: absolute;
+            top: 10px; left: 10px; right: 10px;
+            background: #ffebee; color: #c62828;
+            padding: 10px; border-radius: 4px; border: 1px solid #ef9a9a;
+            font-size: 14px; z-index: 999;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="app-container">
+        <div id="error-msg"></div>
+
+        <div id="page-select" class="page active">
+            <h1>Cyberball 实验任务</h1>
+            <p>请选择实验版本以继续：</p>
+            <div style="margin-top: 20px;">
+                <button class="btn" onclick="goToInstructions(1)">版本 1</button>
+                <button class="btn" onclick="goToInstructions(2)">版本 2</button>
+            </div>
+        </div>
+
+        <div id="page-instruction" class="page">
+            <h1>任务说明</h1>
+            <div style="text-align: left; margin-bottom: 30px;">
+                <p>1. 这是一个关于心理可视化的网络传球任务。</p>
+                <p>2. 您将与另外两名在线玩家连线互动。</p>
+                <p>3. 当球传到您手中时，请<strong>点击其他玩家的图片</strong>将球传出。</p>
+                <p>4. 请尽可能投入其中，就像真实互动一样。</p>
+            </div>
+            <p id="mode-display" style="font-size: 14px; color: #999;"></p>
+            <button class="btn" onclick="launchGame()">开始实验</button>
+        </div>
+
+        <div id="phaser-container"></div>
+    </div>
+
+    <script>
+        // ==========================================
+        //        第一部分：页面逻辑控制
+        // ==========================================
+        let selectedMode = 1;
+        let gameInstance = null;
+
+        function goToInstructions(mode) {
+            selectedMode = mode;
+            document.getElementById('page-select').classList.remove('active');
+            document.getElementById('page-instruction').classList.add('active');
+            document.getElementById('mode-display').innerText = `当前加载配置: Condition ${mode === 1 ? 'A (接纳)' : 'B (排斥)'}`;
+        }
+
+        function launchGame() {
+            document.getElementById('page-instruction').classList.remove('active');
+            // 启动游戏前先销毁旧实例（防止重复）
+            if (gameInstance) {
+                gameInstance.destroy(true);
+            }
+            initPhaserGame(selectedMode);
+        }
+
+        function showError(msg) {
+            const el = document.getElementById('error-msg');
+            el.innerText = "错误: " + msg;
+            el.style.display = 'block';
+        }
+
+        // ==========================================
+        //        第二部分：游戏核心逻辑 (原 game.js)
+        // ==========================================
+        
+        class Settings {
+            constructor(mode) {
+                this.mode = mode; 
+                this.player = { name: '我' };
+                this.computerPlayers = [ { name: '玩家 A' }, { name: '玩家 B' } ];
+                
+                // --- 修改点：设置总投球数为 60 ---
+                this.throwCount = 60; 
+                
+                this.ballSpeed = 500; 
+                this.baseUrl = './assets'; // 图片路径
+            }
+        }
+
+        class CyberballScene extends Phaser.Scene {
+            constructor() { 
+                super({ key: 'CyberballScene' });
+                this.cpuSprites = [];
+                this.throwCount = 0;
+                this.isGameOver = false;
+            }
+
+            init(data) {
+                this.settings = new Settings(data.mode);
+            }
+
+            preload() {
+                this.load.path = this.settings.baseUrl + '/';
+                
+                // 加载资源
+                this.load.image('ball', 'ball.png');
+                this.load.image('player_idle', 'idle.png');
+                this.load.image('player_active', 'active.png');
+                this.load.image('player_catch', 'catch.png');
+                this.load.image('player_throw_1', 'throw1.png');
+                
+                // 尝试加载额外帧（如果存在）
+                this.load.image('player_throw_2', 'throw2.png');
+                this.load.image('player_throw_3', 'throw3.png');
+            }
+
+            create() {
+                this.cameras.main.setBackgroundColor('#ffffff');
+                this.createAnims();
+
+                this.playerGroup = this.physics.add.group({ immovable: true, allowGravity: false });
+
+                const w = this.scale.width;
+                const h = this.scale.height;
+                const pPadding = 80;
+
+                // 创建玩家
+                this.playerSprite = this.spawnPlayer(w/2, h - pPadding, this.settings.player.name, true);
+                this.playerHasBall = true;
+
+                // 创建电脑玩家
+                const cpuCount = this.settings.computerPlayers.length;
+                for(let i=0; i<cpuCount; i++) {
+                    let x = (w / (cpuCount + 1)) * (i + 1);
+                    // 调整位置让它们稍微分开点
+                    if (cpuCount === 2) x = (i===0) ? 150 : w - 150;
+                    
+                    let cpu = this.spawnPlayer(x, pPadding, this.settings.computerPlayers[i].name, false);
+                    this.cpuSprites.push(cpu);
+                }
+
+                // 创建球
+                let startPos = this.getHandPosition(this.playerSprite);
+                this.ballSprite = this.physics.add.sprite(startPos.x, startPos.y, 'ball');
+                this.ballSprite.setDisplaySize(36, 36);
+                
+                // 碰撞检测
+                this.physics.add.overlap(this.ballSprite, this.playerGroup, (ball, receiver) => {
+                    if (!this.ballHeld && receiver === this.throwTarget) {
+                        this.catchBall(receiver);
+                    }
+                });
+
+                this.ballHeld = true;
+            }
+
+            createAnims() {
+                this.anims.create({ key: 'idle', frames: [ { key: 'player_idle' } ], frameRate: 10, repeat: -1 });
+                this.anims.create({ key: 'active', frames: [ { key: 'player_active' } ], frameRate: 10, repeat: -1 });
+                this.anims.create({ key: 'catch', frames: [ { key: 'player_catch' }, { key: 'player_active' } ], frameRate: 10, repeat: 0 });
+
+                let throwFrames = [ { key: 'player_throw_1' } ];
+                // 检查是否有额外帧并添加到动画中
+                if (this.textures.exists('player_throw_2')) throwFrames.push({ key: 'player_throw_2' });
+                if (this.textures.exists('player_throw_3')) throwFrames.push({ key: 'player_throw_3' });
+
+                this.anims.create({ key: 'throw', frames: throwFrames, frameRate: 12, repeat: 0 });
+            }
+
+            spawnPlayer(x, y, name, isHuman) {
+                let sprite = this.playerGroup.create(x, y, 'player_idle');
+                sprite.isHuman = isHuman;
+                
+                this.add.text(x, y + 50, name, { 
+                    font: '16px Arial', fill: isHuman ? '#4A90E2' : '#333', fontStyle: 'bold' 
+                }).setOrigin(0.5);
+
+                if (!isHuman) {
+                    sprite.setInteractive({ cursor: 'pointer' });
+                    sprite.on('pointerdown', () => {
+                        if (this.playerHasBall && !this.isGameOver) {
+                            this.throwBall(this.playerSprite, sprite);
+                        }
+                    });
+                    sprite.on('pointerover', () => sprite.setTint(0xddddee));
+                    sprite.on('pointerout', () => sprite.clearTint());
+                } else {
+                    sprite.play('active');
+                }
+                return sprite;
+            }
+
+            update() {
+                if (this.isGameOver) return;
+                if (this.playerHasBall) {
+                    this.playerSprite.flipX = this.input.x < this.playerSprite.x;
+                    let hand = this.getHandPosition(this.playerSprite);
+                    this.ballSprite.x = hand.x;
+                    this.ballSprite.y = hand.y;
+                }
+            }
+
+            getHandPosition(sprite) {
+                const offsetX = sprite.flipX ? 40 : -40;
+                const offsetY = -10; 
+                return { x: sprite.x + offsetX, y: sprite.y + offsetY };
+            }
+
+            throwBall(thrower, receiver) {
+                this.playerHasBall = false;
+                this.ballHeld = false;
+                this.throwTarget = receiver;
+                this.throwCount++;
+
+                try { thrower.play('throw').chain('idle'); } catch(e){}
+
+                this.physics.moveToObject(this.ballSprite, this.getHandPosition(receiver), this.settings.ballSpeed);
+            }
+
+            catchBall(receiver) {
+                this.ballHeld = true;
+                this.ballSprite.body.reset(receiver.x, receiver.y);
+                
+                try { receiver.play('catch').chain('active'); } catch(e){}
+                
+                if (this.throwCount >= this.settings.throwCount) {
+                    this.endGame();
+                    return;
+                }
+
+                if (receiver.isHuman) {
+                    this.playerHasBall = true;
+                    receiver.play('active');
+                } else {
+                    // 随机思考时间: 600ms - 2000ms
+                    const delay = Phaser.Math.Between(600, 2000);
+                    
+                    this.time.delayedCall(delay, () => {
+                        let target = this.chooseTargetForCPU(receiver);
+                        receiver.flipX = target.x < receiver.x;
+                        this.throwBall(receiver, target);
+                    });
+                }
+            }
+
+            // --- 核心修改：渐进排斥逻辑 ---
+            chooseTargetForCPU(currentCpu) {
+                let others = this.cpuSprites.filter(s => s !== currentCpu);
+                others.push(this.playerSprite);
+
+                // 默认策略：随机选人（Mode 1 接纳组）
+                // 在三人局中，随机选意味着 50% 给玩家，50% 给另一个 CPU。
+                // 这样玩家大概能拿到 33% 的球权。
+                if (this.settings.mode === 1) {
+                    return others[Phaser.Math.Between(0, others.length - 1)];
+                }
+
+                // Mode 2: 渐进排斥组逻辑
+                // "前15个球: 0.33 (即公平)" -> 在二选一时，50% 概率给玩家即为公平
+                // "中间20个球: 0.20"
+                // "最后25个球: 0.10"
+                
+                if (this.settings.mode === 2) {
+                    let passToPlayerProb = 0.5; // 默认公平 (50% 给玩家，50% 给另一个 CPU)
+
+                    if (this.throwCount <= 15) {
+                        // 阶段一：建立关系 (0 - 15 球)
+                        passToPlayerProb = 0.5; 
+                    } else if (this.throwCount <= 35) {
+                        // 阶段二：开始冷落 (16 - 35 球)
+                        passToPlayerProb = 0.20; 
+                    } else {
+                        // 阶段三：完全排斥 (36 - 60 球)
+                        passToPlayerProb = 0.10; 
+                    }
+
+                    // 执行概率判定
+                    if (Math.random() < passToPlayerProb) {
+                        return this.playerSprite;
+                    } else {
+                        // 传给另一个 CPU
+                        const cpuTargets = this.cpuSprites.filter(s => s !== currentCpu);
+                        return cpuTargets[0];
+                    }
+                }
+            }
+
+            endGame() {
+                this.isGameOver = true;
+                
+                // 遮罩
+                const rect = this.add.rectangle(this.scale.width/2, this.scale.height/2, this.scale.width, this.scale.height, 0xffffff, 0.9);
+                rect.setDepth(200);
+
+                // 结束文字
+                const text = this.add.text(this.scale.width/2, this.scale.height/2, "实验结束，感谢您的参与", {
+                    fontFamily: '"Microsoft YaHei", Arial',
+                    fontSize: '32px', 
+                    color: '#2C3E50', 
+                    fontStyle: 'bold',
+                    align: 'center'
+                });
+                
+                text.setOrigin(0.5); 
+                text.setDepth(201);  
+                text.setPadding(20); 
+            }
+        }
+
+        // --- 4. 启动函数 ---
+        function initPhaserGame(mode) {
+            const config = {
+                type: Phaser.AUTO,
+                parent: 'phaser-container',
+                width: 800,
+                height: 500,
+                transparent: true,
+                physics: { default: 'arcade', arcade: { debug: false } },
+                scene: CyberballScene
+            };
+
+            gameInstance = new Phaser.Game(config);
+            gameInstance.scene.start('CyberballScene', { mode: mode });
+        }
+    </script>
+</body>
+</html>
