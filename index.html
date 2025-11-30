@@ -42,6 +42,8 @@
             left: 0;
             background: white;
             z-index: 10;
+            padding: 20px;
+            box-sizing: border-box;
         }
 
         .page.active { display: flex; }
@@ -54,9 +56,28 @@
         }
 
         /* --- 按钮美化 --- */
-        h1 { color: #333; margin-bottom: 30px; }
+        h1 { 
+            color: #333; 
+            margin-bottom: 20px; /* 减小标题下边距 */
+            margin-top: 0;
+            font-size: 28px; /* 稍微调小标题 */
+        }
         p { color: #555; font-size: 18px; line-height: 1.6; max-width: 600px; }
+        .instruction-box {
+            text-align: left; 
+            margin-bottom: 20px; 
+            line-height: 1.5; /* 行高调小一点 */
+            max-width: 650px;
+            max-height: 320px; /* 限制最大高度 */
+            overflow-y: auto;  /* 内容过多时显示滚动条 */
+            padding-right: 10px; /* 防止滚动条挡住字 */
+        }
 
+        .instruction-box p {
+            color: #555; 
+            font-size: 16px; /* 字体改小一点以容纳更多内容 */
+            margin: 8px 0;   /* 段落间距微调 */
+        }
         .btn {
             padding: 12px 50px;
             margin: 10px;
@@ -99,7 +120,7 @@
         </div>
         <div id="page-instruction" class="page">
             <h1>心理可视化能力测试</h1>
-            <div style="text-align: left; margin-bottom: 30px; line-height: 1.8;">
+            <div class="instruction-box">
                 <p>欢迎参加本次实验。这是一项关于<strong>“心理表象可视化 (Mental Visualization)”</strong>对任务表现影响的研究。</p>
                 <p><strong>任务说明：</strong></p>
                 <p>1. 您将通过网络连接与另外两名在线参与者进行传球互动。</p>
@@ -107,8 +128,10 @@
                 <p>3. 当球传到您手中时，请点击其他玩家的图片将球传出。</p>
                 <p>4. 无论发生什么，请保持专注并持续进行心理想象，直到任务自动结束。</p>
             </div>
+            <div id="mode-display" style="font-size: 12px; color: #ccc; margin-bottom: 5px;"></div>
             <button class="btn" onclick="launchGame()">我已准备好，开始连接</button>
         </div>
+    
         <div id="phaser-container"></div>
     </div>
 
