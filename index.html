@@ -97,19 +97,18 @@
                 <button class="btn" onclick="goToInstructions(2)">版本 2</button>
             </div>
         </div>
-
         <div id="page-instruction" class="page">
-            <h1>任务说明</h1>
-            <div style="text-align: left; margin-bottom: 30px;">
-                <p>1. 这是一个关于心理可视化的网络传球任务。</p>
-                <p>2. 您将与另外两名在线玩家连线互动。</p>
-                <p>3. 当球传到您手中时，请<strong>点击其他玩家的图片</strong>将球传出。</p>
-                <p>4. 请尽可能投入其中，就像真实互动一样。</p>
+            <h1>心理可视化能力测试</h1>
+            <div style="text-align: left; margin-bottom: 30px; line-height: 1.8;">
+                <p>欢迎参加本次实验。这是一项关于<strong>“心理表象可视化 (Mental Visualization)”</strong>对任务表现影响的研究。</p>
+                <p><strong>任务说明：</strong></p>
+                <p>1. 您将通过网络连接与另外两名在线参与者进行传球互动。</p>
+                <p>2. <strong>重要：</strong>在任务过程中，请运用您的想象力，尽可能生动地在脑海中构建整个场景（例如：想象其他玩家的样子、球的轨迹、接球的手感等）。</p>
+                <p>3. 当球传到您手中时，请点击其他玩家的图片将球传出。</p>
+                <p>4. 无论发生什么，请保持专注并持续进行心理想象，直到任务自动结束。</p>
             </div>
-            <p id="mode-display" style="font-size: 14px; color: #999;"></p>
-            <button class="btn" onclick="launchGame()">开始实验</button>
+            <button class="btn" onclick="launchGame()">我已准备好，开始连接</button>
         </div>
-
         <div id="phaser-container"></div>
     </div>
 
@@ -306,7 +305,7 @@
                     receiver.play('active');
                 } else {
                     // 随机思考时间: 600ms - 2000ms
-                    const delay = Phaser.Math.Between(600, 2000);
+                    const delay = Phaser.Math.Between(300, 2500);
                     
                     this.time.delayedCall(delay, () => {
                         let target = this.chooseTargetForCPU(receiver);
@@ -341,10 +340,10 @@
                         passToPlayerProb = 0.5; 
                     } else if (this.throwCount <= 35) {
                         // 阶段二：开始冷落 (16 - 35 球)
-                        passToPlayerProb = 0.20; 
+                        passToPlayerProb = 0.30; 
                     } else {
                         // 阶段三：完全排斥 (36 - 60 球)
-                        passToPlayerProb = 0.10; 
+                        passToPlayerProb = 0.15; 
                     }
 
                     // 执行概率判定
@@ -366,7 +365,7 @@
                 rect.setDepth(200);
 
                 // 结束文字
-                const text = this.add.text(this.scale.width/2, this.scale.height/2, "实验结束，感谢您的参与", {
+                const text = this.add.text(this.scale.width/2, this.scale.height/2, "游戏结束，感谢您的参与", {
                     fontFamily: '"Microsoft YaHei", Arial',
                     fontSize: '32px', 
                     color: '#2C3E50', 
