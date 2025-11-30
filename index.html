@@ -304,7 +304,7 @@
                     this.playerHasBall = true;
                     receiver.play('active');
                 } else {
-                    // 随机思考时间: 600ms - 2000ms
+                    // 随机思考时间: 300ms - 2500ms
                     const delay = Phaser.Math.Between(300, 2500);
                     
                     this.time.delayedCall(delay, () => {
@@ -329,8 +329,8 @@
 
                 // Mode 2: 渐进排斥组逻辑
                 // "前15个球: 0.33 (即公平)" -> 在二选一时，50% 概率给玩家即为公平
-                // "中间20个球: 0.20"
-                // "最后25个球: 0.10"
+                // "中间20个球: 0.30"
+                // "最后25个球: 0.15"
                 
                 if (this.settings.mode === 2) {
                     let passToPlayerProb = 0.5; // 默认公平 (50% 给玩家，50% 给另一个 CPU)
@@ -365,7 +365,7 @@
                 rect.setDepth(200);
 
                 // 结束文字
-                const text = this.add.text(this.scale.width/2, this.scale.height/2, "游戏结束，感谢您的参与", {
+                const text = this.add.text(this.scale.width/2, this.scale.height/2, "实验结束，感谢您的参与", {
                     fontFamily: '"Microsoft YaHei", Arial',
                     fontSize: '32px', 
                     color: '#2C3E50', 
