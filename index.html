@@ -327,8 +327,8 @@
                     this.playerHasBall = true;
                     receiver.play('active');
                 } else {
-                    // 随机思考时间: 300ms - 2500ms
-                    const delay = Phaser.Math.Between(300, 2500);
+                    // 随机思考时间: 300ms - 5000ms
+                    const delay = Phaser.Math.Between(300, 5000);
                     
                     this.time.delayedCall(delay, () => {
                         let target = this.chooseTargetForCPU(receiver);
